@@ -124,7 +124,13 @@ function [IMat, textoMat] = GetMatricula(IEnt)
     IMat = I(YSupIzda:1:YInfIzda,XSupIzda:1:XSupDcha,:);
     
     matricula = getTextoMSERYOCR(IMat);
-    textoMat = [matricula.Text];
+    junto = "";
+    ii = length(matricula);
+    while (ii>0)
+        junto = strcat(junto, matricula(ii).Text);
+        ii = ii-1;
+    end
+    textoMat = junto;
     
     %% 
     %{
