@@ -104,44 +104,49 @@ end
 MaxP = max(PlataformasCandidatas);
 [row,col,v] = find(PlataformasCandidatas == MaxP);
 
-%% Dibujo de la plataforma sobre la imagen original
-Rectangulo = round(PropRegiones(col).BoundingBox);
-%Coordenadas de la región y control de desbordamiento de la imagen:
-%(X,Y) de la esquina superior izquierda
-XSupIzda = Rectangulo(1);
-if XSupIzda <=0; XSupIzda = 1; end
-YSupIzda = Rectangulo(2);
-if YSupIzda <=0; YSupIzda = 1; end
+if  length(col) ~= 1
+    disp('No se ha podido detectar la matricula, disculpe las molestias')
+else
+    %% Dibujo de la plataforma sobre la imagen original
+    Rectangulo = round(PropRegiones(col).BoundingBox);
+    disp(Rectangulo)
+    %Coordenadas de la región y control de desbordamiento de la imagen:
+    %(X,Y) de la esquina superior izquierda
+    XSupIzda = Rectangulo(1);
+    if XSupIzda <=0; XSupIzda = 1; end
+    YSupIzda = Rectangulo(2);
+    if YSupIzda <=0; YSupIzda = 1; end
+            
+    ancho =  Rectangulo(3); alto = Rectangulo(4); % ancho y alto del rectángulo
         
-ancho =  Rectangulo(3); alto = Rectangulo(4); % ancho y alto del rectángulo
+    XSupDcha =  round(XSupIzda + ancho);
+    if XSupDcha > N; XSupDcha = N; end
+    YSupDcha =  YSupIzda;
     
-XSupDcha =  round(XSupIzda + ancho);
-if XSupDcha > N; XSupDcha = N; end
-YSupDcha =  YSupIzda;
-
-XInfIzda =  XSupIzda;
-YInfIzda =  round(YSupIzda + alto);
-if YInfIzda > M; YInfIzda = M; end
-
-XInfDcha =  XSupDcha; 
-YInfDcha =  YInfIzda;
-
-
-%% 
-
-%Deteción automática y reconocimiento de texto usando MSER y OCR
-
-IMat = I(YSupIzda:1:YInfIzda,XSupIzda:1:XSupDcha,:);
-
-matricula = getTextoMSERYOCR(IMat);
-
-%% 
-
-color = 'red'; texto = ['Matrícula: ',matricula.Text];
-figure; imshow(I); impixelinfo; title('Identificación matricula'); hold on; 
-text(XSupDcha+100,YSupDcha,texto,'Color','y','FontSize',10,'FontWeight','bold')
-line([XSupIzda,XSupDcha],[YSupIzda,YSupDcha],'LineWidth',2,'Color',color)
-line([XSupIzda,XInfIzda],[YSupIzda,YInfIzda],'LineWidth',2,'Color',color)
-line([XSupDcha,XInfDcha],[YSupDcha,YInfDcha],'LineWidth',2,'Color',color)
-line([XInfIzda,XInfDcha],[YInfIzda,YInfDcha],'LineWidth',2,'Color',color)
-hold off
+    XInfIzda =  XSupIzda;
+    YInfIzda =  round(YSupIzda + alto);
+    if YInfIzda > M; YInfIzda = M; end
+    
+    XInfDcha =  XSupDcha; 
+    YInfDcha =  YInfIzda;
+    
+    
+    %% 
+    
+    %Deteción automática y reconocimiento de texto usando MSER y OCR
+    
+    IMat = I(YSupIzda:1:YInfIzda,XSupIzda:1:XSupDcha,:);
+    
+    matricula = getTextoMSERYOCR(IMat);
+    
+    %% 
+    
+    color = 'red'; texto = ['Matrícula: ',matricula.Text];
+    figure; imshow(I); impixelinfo; title('Identificación matricula'); hold on; 
+    text(XSupDcha+100,YSupDcha,texto,'Color','y','FontSize',10,'FontWeight','bold')
+    line([XSupIzda,XSupDcha],[YSupIzda,YSupDcha],'LineWidth',2,'Color',color)
+    line([XSupIzda,XInfIzda],[YSupIzda,YInfIzda],'LineWidth',2,'Color',color)
+    line([XSupDcha,XInfDcha],[YSupDcha,YInfDcha],'LineWidth',2,'Color',color)
+    line([XInfIzda,XInfDcha],[YInfIzda,YInfDcha],'LineWidth',2,'Color',color)
+    hold off
+end

@@ -1,12 +1,16 @@
-function [IMat, textoMat] = GetMatricula(IEnt)
+function [IMat, textoMat] = GetMatricula(IEnt, redSel)
     %clear all; close all;
     
-    
+    if (strcmp(redSel,'alexnet') == 1)
+      load netTransferPlataformaAlexNet.mat
+    else
+      load netTransferPlataformaGoogleNet.mat
+    end
     
     %tipoRed = red;
-    load netTransferPlataformaAlexNet;
+    %load netTransferPlataformaAlexNet;
     
-    sz = netTransfer.Layers(1).InputSize;
+    %sz = netTransfer.Layers(1).InputSize;
     
     I=IEnt;
     %I = imrotate(I,-90,'bilinear');
@@ -43,7 +47,7 @@ function [IMat, textoMat] = GetMatricula(IEnt)
     end
     
     PlataformasCandidatas = zeros(1,NumRegiones);
-    Errors = zeros(NumRegiones,9);
+    %Errors = zeros(NumRegiones,9);
     for i=1:1:NumRegiones
         if RegionesSeleccionadas(i) == 1
             Rectangulo = round(PropRegiones(i).BoundingBox);
@@ -58,22 +62,21 @@ function [IMat, textoMat] = GetMatricula(IEnt)
         
             XSupDcha =  round(XSupIzda + ancho);
             if XSupDcha > N; XSupDcha = N; end
-            YSupDcha =  YSupIzda; 
-         
-            XInfIzda =  XSupIzda;
+          
             YInfIzda =  round(YSupIzda + alto);
             if YInfIzda > M; YInfIzda = M; end
-    
-            XInfDcha =  XSupDcha; 
-            YInfDcha =  YInfIzda;
         
             Recorte = I(YSupIzda:1:YInfIzda,XSupIzda:1:XSupDcha,:);     
             
             % Seleccionamos sólo las regiones que tienen etiqueta la
             % plataforma2 y además la probabilidad de clasificación sea
             % superior a 0.5 para garantizar que tenga un valor suficiente
-            Ir = imresize(Recorte, [227 227]);
-            
+            %Ir = imresize(Recorte, [227 227]);
+            if (strcmp(redSel,'alexnet') == 1)
+               Ir = imresize(Recorte, [227 227]);
+            else
+               Ir = imresize(Recorte, [224 224]);
+            end
             %figure;
             %imshow(Ir);
             %impixelinfo;
@@ -94,54 +97,55 @@ function [IMat, textoMat] = GetMatricula(IEnt)
     MaxP = max(PlataformasCandidatas);
     [row,col,v] = find(PlataformasCandidatas == MaxP);
     
-    %% Dibujo de la plataforma sobre la imagen original
-    Rectangulo = round(PropRegiones(col).BoundingBox);
-    %Coordenadas de la región y control de desbordamiento de la imagen:
-    %(X,Y) de la esquina superior izquierda
-    XSupIzda = Rectangulo(1);
-    if XSupIzda <=0; XSupIzda = 1; end
-    YSupIzda = Rectangulo(2);
-    if YSupIzda <=0; YSupIzda = 1; end
+    if  length(col) ~= 1 % Hay demasiadas matrículas candidatas
+        textoMat = 'No se ha podido detectar la matricula, disculpe las molestias';
+        IMat = I;
+    else
+        %% Dibujo de la plataforma sobre la imagen original
+    
+        Rectangulo = round(PropRegiones(col).BoundingBox);
+        %Coordenadas de la región y control de desbordamiento de la imagen:
+        %(X,Y) de la esquina superior izquierda
+        XSupIzda = Rectangulo(1);
+        if XSupIzda <=0; XSupIzda = 1; end
+        YSupIzda = Rectangulo(2);
+        if YSupIzda <=0; YSupIzda = 1; end
+                
+        ancho =  Rectangulo(3); alto = Rectangulo(4); % ancho y alto del rectángulo
             
-    ancho =  Rectangulo(3); alto = Rectangulo(4); % ancho y alto del rectángulo
+        XSupDcha =  round(XSupIzda + ancho);
+        if XSupDcha > N; XSupDcha = N; end
+
+        YInfIzda =  round(YSupIzda + alto);
+        if YInfIzda > M; YInfIzda = M; end
         
-    XSupDcha =  round(XSupIzda + ancho);
-    if XSupDcha > N; XSupDcha = N; end
-    YSupDcha =  YSupIzda;
-    
-    XInfIzda =  XSupIzda;
-    YInfIzda =  round(YSupIzda + alto);
-    if YInfIzda > M; YInfIzda = M; end
-    
-    XInfDcha =  XSupDcha; 
-    YInfDcha =  YInfIzda;
-    
-    
-    %% 
-    
-    %Deteción automática y reconocimiento de texto usando MSER y OCR
-    
-    IMat = I(YSupIzda:1:YInfIzda,XSupIzda:1:XSupDcha,:);
-    
-    matricula = getTextoMSERYOCR(IMat);
-    junto = "";
-    ii = length(matricula);
-    while (ii>0)
-        junto = strcat(junto, matricula(ii).Text);
-        ii = ii-1;
+        %% 
+        
+        %Deteción automática y reconocimiento de texto usando MSER y OCR
+        
+        IMat = I(YSupIzda:1:YInfIzda,XSupIzda:1:XSupDcha,:);
+        
+        matricula = getTextoMSERYOCR(IMat);
+        junto = "";
+        ii = length(matricula);
+        while (ii>0)
+            junto = strcat(junto, matricula(ii).Text);
+            ii = ii-1;
+        end
+        textoMat = junto;
+        
+        %% 
+        %{
+        color = 'red'; texto = ['Matrícula: ',matricula.Text];
+        figure; imshow(I); impixelinfo; title('Identificación matricula'); hold on; 
+        text(XSupDcha+100,YSupDcha,texto,'Color','y','FontSize',10,'FontWeight','bold')
+        line([XSupIzda,XSupDcha],[YSupIzda,YSupDcha],'LineWidth',2,'Color',color)
+        line([XSupIzda,XInfIzda],[YSupIzda,YInfIzda],'LineWidth',2,'Color',color)
+        line([XSupDcha,XInfDcha],[YSupDcha,YInfDcha],'LineWidth',2,'Color',color)
+        line([XInfIzda,XInfDcha],[YInfIzda,YInfDcha],'LineWidth',2,'Color',color)
+        hold off
+        %}
     end
-    textoMat = junto;
-    
-    %% 
-    %{
-    color = 'red'; texto = ['Matrícula: ',matricula.Text];
-    figure; imshow(I); impixelinfo; title('Identificación matricula'); hold on; 
-    text(XSupDcha+100,YSupDcha,texto,'Color','y','FontSize',10,'FontWeight','bold')
-    line([XSupIzda,XSupDcha],[YSupIzda,YSupDcha],'LineWidth',2,'Color',color)
-    line([XSupIzda,XInfIzda],[YSupIzda,YInfIzda],'LineWidth',2,'Color',color)
-    line([XSupDcha,XInfDcha],[YSupDcha,YInfDcha],'LineWidth',2,'Color',color)
-    line([XInfIzda,XInfDcha],[YInfIzda,YInfDcha],'LineWidth',2,'Color',color)
-    hold off
-    %}
+   
 end
 
